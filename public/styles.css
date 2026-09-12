@@ -346,14 +346,21 @@ button { cursor: pointer; }
 /* ---------- Notes ---------- */
 .notes { display: grid; gap: var(--space-2); max-width: 720px; }
 .note {
-  display: block; width: 100%; text-align: left;
   background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--who, var(--border));
-  border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--space-3) 14px;
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--space-2) 14px var(--space-3);
 }
-.note:hover { background: var(--surface-2); }
-.note:active { opacity: 0.75; }
-.note-meta { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--muted); font-size: 14px; margin-bottom: 6px; flex-wrap: wrap; }
-.note-author { font-weight: 600; color: var(--text); }
+.note-meta { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); color: var(--muted); font-size: 14px; flex-wrap: wrap; }
+.note-author { color: var(--text); font-weight: 600; }
+.note-ops { display: flex; gap: 2px; margin-right: -8px; }
+.note-ops .btn { min-height: 36px; min-width: 36px; padding: 0 8px; font-size: 14px; }
+.note-ops .note-del { font-size: 22px; }
+.note-ops .note-del:hover { color: var(--danger); }
+.note-body {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  padding: 6px 8px; margin: 2px -8px 0; border-radius: 6px;
+}
+.note-body:hover { background: var(--surface-2); }
+.note-body:active { opacity: 0.75; }
 .note-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 #note-form textarea {
   min-height: 72px; resize: vertical; width: 100%;

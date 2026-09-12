@@ -19,15 +19,21 @@ export function renderNotes(state) {
 }
 
 function renderNote(n) {
-  const who = n.author ? esc(n.author.display_name) : 'Someone who left';
+  const who = n.author ? esc(n.author.display_name) : 'someone who left';
   const color = n.author?.color ?? 'var(--border)';
   const when = fmtDateTime(n.created_at);
   const edited = n.edited_by ? ` · edited by ${esc(n.edited_by)}` : n.updated_at > n.created_at ? ' · edited' : '';
   return `
-    <button class="note" data-note="${n.id}" style="--who:${esc(color)}" aria-label="Edit note by ${who}">
-      <div class="note-meta"><span class="note-author">${who}</span><span>${when}${edited}</span></div>
-      <div class="note-text">${esc(n.text)}</div>
-    </button>`;
+    <article class="note" style="--who:${esc(color)}">
+      <div class="note-meta">
+        <span>Added by <b class="note-author">${who}</b> · ${when}${edited}</span>
+        <span class="note-ops">
+          <button class="btn ghost" data-note-edit="${n.id}">Edit</button>
+          <button class="btn icon ghost note-del" data-note-del="${n.id}" aria-label="Delete note by ${who}" title="Delete">×</button>
+        </span>
+      </div>
+      <button class="note-body" data-note-edit="${n.id}" aria-label="Edit note by ${who}"><div class="note-text">${esc(n.text)}</div></button>
+    </article>`;
 }
 
 export function bindNotes(root) {
@@ -47,10 +53,26 @@ export function bindNotes(root) {
     }
   });
 
-  root.querySelector('#note-list')?.addEventListener('click', (e) => {
-    const card = e.target.closest('[data-note]');
-    if (!card) return;
-    const note = state.notes.find((n) => n.id === Number(card.dataset.note));
+  root.querySelector('#note-list')?.addEventListener('click', async (e) => {
+    const del = e.target.closest('[data-note-del]');
+    if (del) {
+      const note = state.notes.find((n) => n.id === Number(del.dataset.noteDel));
+      if (!note) return;
+      const by = note.author ? note.author.display_name : 'someone who left';
+      if (!confirm(`Delete the note by ${by}?`)) return;
+      try {
+        await api(`/api/notes/${note.id}`, { method: 'DELETE' });
+        state.notes = state.notes.filter((n) => n.id !== note.id);
+        render();
+        toast('Note deleted');
+      } catch (ex) {
+        if (ex.status !== 401) toast(ex.message, true);
+      }
+      return;
+    }
+    const edit = e.target.closest('[data-note-edit]');
+    if (!edit) return;
+    const note = state.notes.find((n) => n.id === Number(edit.dataset.noteEdit));
     if (note) openNoteSheet(note);
   });
 }
@@ -60,7 +82,7 @@ function openNoteSheet(note) {
     <h2>Edit note</h2>
     <form class="form" id="note-edit-form">
       <div class="field"><label for="ne-text">Note</label><textarea id="ne-text" name="text" required maxlength="2000" rows="6">${esc(note.text)}</textarea></div>
-      <p class="hint">Written by ${note.author ? esc(note.author.display_name) : 'someone who left'} on ${fmtDateTime(note.created_at)}.</p>
+      <p class="hint">Added by ${note.author ? esc(note.author.display_name) : 'someone who left'} on ${fmtDateTime(note.created_at)}.</p>
       <div class="error" id="ne-error"></div>
       <div class="actions">
         <button type="button" class="btn danger" id="ne-delete">Delete</button>
