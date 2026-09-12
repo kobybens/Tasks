@@ -16,8 +16,10 @@ function renderDay(state, mode, date, weekdayIdx, isToday) {
   const addLabel = mode === 'car' ? 'Book the car' : 'Add task';
 
   let body = '';
-  if (mode === 'week') {
-    body += tasks.length ? tasks.map(renderTask).join('') : '';
+  if (state.loading) {
+    body = '<div class="empty">Loading…</div>';
+  } else if (mode === 'week') {
+    body += tasks.map(renderTask).join('');
     if (bookings.length) body += `<div class="section-label">Car</div>${bookings.map((b) => renderBooking(b, date)).join('')}`;
     if (!tasks.length && !bookings.length) body = '<div class="empty">Nothing planned</div>';
   } else {
@@ -25,9 +27,10 @@ function renderDay(state, mode, date, weekdayIdx, isToday) {
   }
 
   return `
-    <section class="day${isToday ? ' today' : ''}" aria-label="${WEEKDAYS[weekdayIdx]} ${fmtDay(date)}">
+    <section class="day${isToday ? ' today' : ''}" aria-label="${WEEKDAYS[weekdayIdx]} ${fmtDay(date)}${isToday ? ', today' : ''}">
       <div class="day-head">
-        <div class="d">${WEEKDAYS[weekdayIdx]}<small>${fmtDay(date)}${isToday ? ' · Today' : ''}</small></div>
+        <div class="d">${WEEKDAYS[weekdayIdx]}<small>${fmtDay(date)}</small></div>
+        ${isToday ? '<span class="pill">Today</span>' : ''}
         <button class="btn icon ghost" data-action="${addAction}" data-date="${date}" aria-label="${addLabel}" title="${addLabel}">＋</button>
       </div>
       <div class="day-body">${body}</div>
@@ -38,7 +41,7 @@ function renderTask(o) {
   return `
     <div class="row${o.done ? ' done' : ''}" style="--who:${esc(o.assignee.color)}">
       <button class="check" role="checkbox" aria-checked="${o.done}" data-action="toggle-done" data-task="${o.task_id}" data-date="${o.date}" aria-label="Mark ${esc(o.title)} done">${o.done ? '✓' : ''}</button>
-      <button class="edit" data-action="edit-task" data-task="${o.task_id}" data-date="${o.date}">
+      <button class="edit" data-action="edit-task" data-task="${o.task_id}" data-date="${o.date}" aria-label="Edit ${esc(o.title)}">
         <div class="t">${esc(o.title)}</div>
         <div class="m">${esc(o.assignee.display_name)}${o.kind === 'weekly' ? ' · weekly' : ''}${o.notes ? ` · ${esc(o.notes)}` : ''}</div>
       </button>
@@ -52,7 +55,7 @@ function renderBooking(b, date) {
   const end = endsToday ? fmtTime(b.end_at) : `${fmtDay(b.end_at.slice(0, 10))} ${fmtTime(b.end_at)}`;
   return `
     <div class="row car-row" style="--who:${esc(b.driver.color)}">
-      <button class="edit" data-action="edit-car" data-id="${b.id}">
+      <button class="edit" data-action="edit-car" data-id="${b.id}" aria-label="Edit car booking ${start} to ${end}">
         <div class="t">${start}–${end}</div>
         <div class="m">${esc(b.driver.display_name)}${b.note ? ` · ${esc(b.note)}` : ''}</div>
       </button>

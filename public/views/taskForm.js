@@ -1,4 +1,4 @@
-import { api, state, loadWeek, toast } from '../app.js';
+import { api, state, loadWeek, toast, withPending } from '../app.js';
 import { closeSheet, esc, openSheet, userOptions, weekday, WEEKDAYS } from '../lib.js';
 
 /**
@@ -37,12 +37,13 @@ export function openTaskForm({ date, occurrence }) {
         ${editing ? '<button type="button" class="btn danger" id="tf-delete">Delete</button>' : ''}
         <span class="spacer"></span>
         <button type="button" class="btn" id="tf-cancel">Cancel</button>
-        <button type="submit" class="btn primary">Save</button>
+        <button type="submit" class="btn primary" id="tf-save">${editing ? 'Save changes' : 'Add task'}</button>
       </div>
     </form>`);
 
   const form = sheet.querySelector('#task-form');
   const err = sheet.querySelector('#tf-error');
+  const save = sheet.querySelector('#tf-save');
   const syncKind = () => {
     const k = form.elements.kind.value;
     sheet.querySelectorAll('[data-kind]').forEach((el) => (el.hidden = el.dataset.kind !== k));
@@ -52,11 +53,11 @@ export function openTaskForm({ date, occurrence }) {
   sheet.querySelector('#tf-cancel').addEventListener('click', closeSheet);
   sheet.querySelector('#tf-title').focus();
 
-  sheet.querySelector('#tf-delete')?.addEventListener('click', async () => {
+  sheet.querySelector('#tf-delete')?.addEventListener('click', async (e) => {
     const msg = t.kind === 'weekly' ? 'Delete this weekly task from every week?' : 'Delete this task?';
     if (!confirm(msg)) return;
     try {
-      await api(`/api/tasks/${t.task_id}`, { method: 'DELETE' });
+      await withPending(e.currentTarget, 'Deleting…', () => api(`/api/tasks/${t.task_id}`, { method: 'DELETE' }));
       closeSheet();
       toast('Task deleted');
       await loadWeek();
@@ -81,8 +82,9 @@ export function openTaskForm({ date, occurrence }) {
       end_date: k === 'weekly' ? f.get('end_date') || null : null,
     };
     try {
-      if (editing) await api(`/api/tasks/${t.task_id}`, { method: 'PATCH', body });
-      else await api('/api/tasks', { method: 'POST', body });
+      await withPending(save, 'Saving…', () =>
+        editing ? api(`/api/tasks/${t.task_id}`, { method: 'PATCH', body }) : api('/api/tasks', { method: 'POST', body }),
+      );
       closeSheet();
       toast(editing ? 'Task updated' : 'Task added');
       await loadWeek();

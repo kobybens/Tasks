@@ -1,4 +1,4 @@
-import { api, state, loadWeek, toast } from '../app.js';
+import { api, state, loadWeek, toast, withPending } from '../app.js';
 import { closeSheet, esc, fmtDay, fmtTime, openSheet, userOptions } from '../lib.js';
 
 /**
@@ -29,12 +29,13 @@ export function openCarForm({ date, booking }) {
         ${editing ? '<button type="button" class="btn danger" id="cf-delete">Delete</button>' : ''}
         <span class="spacer"></span>
         <button type="button" class="btn" id="cf-cancel">Cancel</button>
-        <button type="submit" class="btn primary">Save</button>
+        <button type="submit" class="btn primary" id="cf-save">${editing ? 'Save changes' : 'Book the car'}</button>
       </div>
     </form>`);
 
   const form = sheet.querySelector('#car-form');
   const err = sheet.querySelector('#cf-error');
+  const save = sheet.querySelector('#cf-save');
   sheet.querySelector('#cf-cancel').addEventListener('click', closeSheet);
 
   // Keep the return date in step with the date unless the user changed it on purpose.
@@ -46,10 +47,10 @@ export function openCarForm({ date, booking }) {
     if (!endDateTouched) endDateEl.value = dateEl.value;
   });
 
-  sheet.querySelector('#cf-delete')?.addEventListener('click', async () => {
+  sheet.querySelector('#cf-delete')?.addEventListener('click', async (e) => {
     if (!confirm('Delete this car booking?')) return;
     try {
-      await api(`/api/car/${b.id}`, { method: 'DELETE' });
+      await withPending(e.currentTarget, 'Deleting…', () => api(`/api/car/${b.id}`, { method: 'DELETE' }));
       closeSheet();
       toast('Booking deleted');
       await loadWeek();
@@ -69,8 +70,9 @@ export function openCarForm({ date, booking }) {
       note: f.get('note'),
     };
     try {
-      if (editing) await api(`/api/car/${b.id}`, { method: 'PATCH', body });
-      else await api('/api/car', { method: 'POST', body });
+      await withPending(save, 'Saving…', () =>
+        editing ? api(`/api/car/${b.id}`, { method: 'PATCH', body }) : api('/api/car', { method: 'POST', body }),
+      );
       closeSheet();
       toast(editing ? 'Booking updated' : 'Car booked');
       await loadWeek();
@@ -81,7 +83,7 @@ export function openCarForm({ date, booking }) {
         const when = sameDay
           ? `${fmtDay(c.start_at.slice(0, 10))} ${fmtTime(c.start_at)}–${fmtTime(c.end_at)}`
           : `${fmtDay(c.start_at.slice(0, 10))} ${fmtTime(c.start_at)} – ${fmtDay(c.end_at.slice(0, 10))} ${fmtTime(c.end_at)}`;
-        err.textContent = `${c.driver} already has the car ${when}.`;
+        err.textContent = `${c.driver} already has the car ${when}. Pick another time.`;
       } else {
         err.textContent = ex.message;
       }

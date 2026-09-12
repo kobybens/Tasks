@@ -13,6 +13,7 @@ export const state = {
   bookings: [],
   tab: 'week',
   loading: false,
+  focusToday: true,
 };
 
 const root = document.getElementById('app');
@@ -28,18 +29,24 @@ export class ApiError extends Error {
 }
 
 export async function api(path, { method = 'GET', body } = {}) {
-  const res = await fetch(path, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: 'same-origin',
-  });
+  let res;
+  try {
+    res = await fetch(path, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'same-origin',
+    });
+  } catch {
+    throw new ApiError(0, { error: 'No connection. Check your internet and try again.' });
+  }
   const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
   if (res.status === 401 && !path.startsWith('/api/auth/login')) {
     state.user = null;
     render();
     throw new ApiError(401, data);
   }
+  if (res.status >= 500) throw new ApiError(res.status, { error: 'Something went wrong on the server. Please try again.' });
   if (!res.ok) throw new ApiError(res.status, data);
   return data;
 }
@@ -62,6 +69,18 @@ export async function loadWeek() {
   } finally {
     state.loading = false;
     render();
+    scrollToTodayIfNeeded();
+  }
+}
+
+/** On phones the week is a long list; bring today into view once after a fresh load. */
+function scrollToTodayIfNeeded() {
+  if (!state.focusToday) return;
+  state.focusToday = false;
+  if (window.innerWidth >= 700) return;
+  const el = root.querySelector('.day.today');
+  if (el && el.getBoundingClientRect().top > window.innerHeight * 0.6) {
+    el.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
 }
 
@@ -74,7 +93,25 @@ export function toast(msg, isError = false) {
   el.className = `toast${isError ? ' err' : ''}`;
   el.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.hidden = true), 2600);
+  toastTimer = setTimeout(() => (el.hidden = true), isError ? 5000 : 2600);
+}
+
+/**
+ * Disable a submit button while an async action runs, restoring it afterwards.
+ * The returned promise resolves to the action's result or rejects with its error.
+ */
+export async function withPending(button, pendingLabel, action) {
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = pendingLabel;
+  try {
+    return await action();
+  } finally {
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = label;
+    }
+  }
 }
 
 /* ---------------- Rendering ---------------- */
@@ -96,8 +133,7 @@ export function render() {
         <div class="brand">Family Tasks</div>
         <div class="who">
           <span class="dot" style="background:${esc(state.user.color)}"></span>
-          <span>${esc(state.user.display_name)}</span>
-          <button class="btn ghost" data-action="logout" style="min-height:36px">Log out</button>
+          <span class="name">${esc(state.user.display_name)}</span>
         </div>
       </div>
       <nav class="tabs" role="tablist">
@@ -118,7 +154,7 @@ function renderTab() {
   switch (state.tab) {
     case 'week':
     case 'car':
-      return `${renderWeekNav()}${state.loading && !state.occurrences.length ? '<div class="loading">Loading…</div>' : renderWeek(state, state.tab)}`;
+      return `${renderWeekNav()}${renderWeek(state, state.tab)}`;
     case 'admin':
       return renderAdmin(state);
     case 'account':
@@ -149,7 +185,7 @@ function renderLogin() {
         <div class="field"><label for="u">Username</label><input id="u" name="username" autocomplete="username" required autofocus /></div>
         <div class="field"><label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required /></div>
         <div class="error" id="login-error"></div>
-        <button class="btn primary" type="submit">Log in</button>
+        <button class="btn primary" type="submit">Sign in</button>
       </form>
     </div>`;
 }
@@ -163,10 +199,13 @@ root.addEventListener('submit', async (e) => {
   const err = document.getElementById('login-error');
   err.textContent = '';
   try {
-    const { user } = await api('/api/auth/login', { method: 'POST', body: { username: f.get('username'), password: f.get('password') } });
-    state.user = user;
-    await loadUsers();
-    await loadWeek();
+    await withPending(e.target.querySelector('button[type=submit]'), 'Signing in…', async () => {
+      const { user } = await api('/api/auth/login', { method: 'POST', body: { username: f.get('username'), password: f.get('password') } });
+      state.user = user;
+      state.focusToday = true;
+      await loadUsers();
+      await loadWeek();
+    });
   } catch (ex) {
     err.textContent = ex.message;
   }
@@ -181,6 +220,7 @@ root.addEventListener('click', async (e) => {
       case 'logout':
         await api('/api/auth/logout', { method: 'POST' });
         state.user = null;
+        state.tab = 'week';
         render();
         break;
       case 'tab':
@@ -198,6 +238,7 @@ root.addEventListener('click', async (e) => {
         break;
       case 'today':
         state.weekStart = weekStartOf(todayIso());
+        state.focusToday = true;
         await loadWeek();
         break;
       case 'add-task':
@@ -211,12 +252,22 @@ root.addEventListener('click', async (e) => {
       case 'toggle-done': {
         const taskId = btn.dataset.task;
         const date = btn.dataset.date;
-        const done = btn.getAttribute('aria-checked') === 'true';
-        btn.setAttribute('aria-checked', String(!done));
-        btn.closest('.row')?.classList.toggle('done', !done);
-        await api(`/api/tasks/${taskId}/done/${date}`, { method: done ? 'DELETE' : 'PUT' });
-        const occ = state.occurrences.find((o) => o.task_id === Number(taskId) && o.date === date);
-        if (occ) occ.done = !done;
+        const wasDone = btn.getAttribute('aria-checked') === 'true';
+        const row = btn.closest('.row');
+        const apply = (done) => {
+          btn.setAttribute('aria-checked', String(done));
+          btn.textContent = done ? '✓' : '';
+          row?.classList.toggle('done', done);
+        };
+        apply(!wasDone);
+        try {
+          await api(`/api/tasks/${taskId}/done/${date}`, { method: wasDone ? 'DELETE' : 'PUT' });
+          const occ = state.occurrences.find((o) => o.task_id === Number(taskId) && o.date === date);
+          if (occ) occ.done = !wasDone;
+        } catch (ex) {
+          apply(wasDone);
+          throw ex;
+        }
         break;
       }
       case 'add-car':

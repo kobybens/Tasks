@@ -1,11 +1,12 @@
-import { api, toast } from '../app.js';
+import { api, toast, withPending } from '../app.js';
 import { esc } from '../lib.js';
 
 export function renderAccount(state) {
   return `
     <div class="card">
       <h2>Signed in as ${esc(state.user.display_name)}</h2>
-      <p class="hint">Username: @${esc(state.user.username)}${state.user.is_admin ? ' · admin' : ''}</p>
+      <p class="hint">Username @${esc(state.user.username)}${state.user.is_admin ? ' · admin' : ''}</p>
+      <div class="actions" style="justify-content:flex-start"><button class="btn" data-action="logout">Sign out</button></div>
     </div>
     <div class="card">
       <h2>Change password</h2>
@@ -14,7 +15,7 @@ export function renderAccount(state) {
         <div class="field"><label for="pw-new">New password</label><input id="pw-new" name="next" type="password" required minlength="4" autocomplete="new-password" /></div>
         <div class="field"><label for="pw-new2">Repeat new password</label><input id="pw-new2" name="next2" type="password" required minlength="4" autocomplete="new-password" /></div>
         <div class="error" id="pw-error"></div>
-        <div class="actions"><button class="btn primary" type="submit">Change password</button></div>
+        <div class="actions"><button class="btn primary" type="submit" id="pw-save">Change password</button></div>
       </form>
     </div>`;
 }
@@ -31,7 +32,9 @@ export function bindAccount(root) {
       return;
     }
     try {
-      await api('/api/auth/password', { method: 'PATCH', body: { current: f.get('current'), next: f.get('next') } });
+      await withPending(root.querySelector('#pw-save'), 'Saving…', () =>
+        api('/api/auth/password', { method: 'PATCH', body: { current: f.get('current'), next: f.get('next') } }),
+      );
       form.reset();
       toast('Password changed');
     } catch (ex) {
