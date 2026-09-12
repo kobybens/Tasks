@@ -8,6 +8,8 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import taskRoutes from './routes/tasks.js';
 import carRoutes from './routes/car.js';
+import shoppingRoutes from './routes/shopping.js';
+import notesRoutes from './routes/notes.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -37,6 +39,8 @@ export function createApp({ db, sessionSecret, production = false, loginLimit = 
   app.use('/api/users', requireAuth(db), userRoutes(db));
   app.use('/api/tasks', requireAuth(db), taskRoutes(db));
   app.use('/api/car', requireAuth(db), carRoutes(db));
+  app.use('/api/shopping', requireAuth(db), shoppingRoutes(db));
+  app.use('/api/notes', requireAuth(db), notesRoutes(db));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
   app.use(express.static(path.join(rootDir, 'public'), { extensions: ['html'] }));

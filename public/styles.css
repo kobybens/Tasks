@@ -327,3 +327,40 @@ button { cursor: pointer; }
 .toast.err { background: var(--danger); color: #fff; }
 
 .loading { color: var(--muted); padding: 20px; text-align: center; }
+
+/* ---------- Super (shopping list) ---------- */
+.shop-form { display: flex; gap: var(--space-2); margin-bottom: var(--space-2); }
+.shop-form input {
+  flex: 1; min-width: 0; min-height: var(--tap);
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 12px;
+}
+.shop-list { display: grid; gap: var(--space-1); }
+.shop-row { border-left-color: var(--accent); }
+.shop-row.done { border-left-color: var(--border); }
+.shop-row .check[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+.shop-row .shop-del { min-width: 36px; min-height: 36px; font-size: 22px; color: var(--muted); }
+.shop-row .shop-del:hover { color: var(--danger); }
+.shop-done-head { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-2); }
+.shop-done-head .btn { min-height: 36px; }
+
+/* ---------- Notes ---------- */
+.notes { display: grid; gap: var(--space-2); max-width: 720px; }
+.note {
+  display: block; width: 100%; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--who, var(--border));
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--space-3) 14px;
+}
+.note:hover { background: var(--surface-2); }
+.note:active { opacity: 0.75; }
+.note-meta { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--muted); font-size: 14px; margin-bottom: 6px; flex-wrap: wrap; }
+.note-author { font-weight: 600; color: var(--text); }
+.note-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+#note-form textarea {
+  min-height: 72px; resize: vertical; width: 100%;
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 12px;
+}
+
+/* Six tabs must fit a 375px phone */
+@media (max-width: 480px) {
+  .tab { font-size: 14px; padding: 0 6px; }
+}

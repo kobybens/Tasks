@@ -42,6 +42,17 @@ export function fmtRange(from, to) {
     : `${fmtDay(from)} – ${fmtDay(to)} ${b.getUTCFullYear()}`;
 }
 
+/** ISO timestamp -> "12 Sep, 21:40" in the viewer's local time (adds the year if not the current one). */
+export function fmtDateTime(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const year = d.getFullYear() === now.getFullYear() ? '' : ` ${d.getFullYear()}`;
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}${year}, ${hh}:${mm}`;
+}
+
 /** "2026-09-14T16:00" -> "16:00" */
 export function fmtTime(dt) {
   return dt.slice(11, 16);

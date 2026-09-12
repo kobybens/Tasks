@@ -3,6 +3,8 @@ import { openTaskForm } from './views/taskForm.js';
 import { openCarForm } from './views/carForm.js';
 import { renderAdmin, bindAdmin } from './views/admin.js';
 import { renderAccount, bindAccount } from './views/account.js';
+import { renderShopping, bindShopping } from './views/shopping.js';
+import { renderNotes, bindNotes } from './views/notes.js';
 import { addDays, todayIso, weekStartOf, fmtRange, esc } from './lib.js';
 
 export const state = {
@@ -11,6 +13,8 @@ export const state = {
   weekStart: weekStartOf(todayIso()),
   occurrences: [],
   bookings: [],
+  shopping: [],
+  notes: [],
   tab: 'week',
   loading: false,
   focusToday: true,
@@ -73,6 +77,28 @@ export async function loadWeek() {
   }
 }
 
+export async function loadShopping() {
+  state.loading = true;
+  render();
+  try {
+    state.shopping = (await api('/api/shopping')).items;
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+export async function loadNotes() {
+  state.loading = true;
+  render();
+  try {
+    state.notes = (await api('/api/notes')).notes;
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
 /** On phones the week is a long list; bring today into view once after a fresh load. */
 function scrollToTodayIfNeeded() {
   if (!state.focusToday) return;
@@ -124,6 +150,8 @@ export function render() {
   const tabs = [
     ['week', 'Week'],
     ['car', 'Car'],
+    ['shopping', 'Super'],
+    ['notes', 'Notes'],
     ...(state.user.is_admin ? [['admin', 'Admin']] : []),
     ['account', 'Account'],
   ];
@@ -148,6 +176,8 @@ export function render() {
     <main class="main">${renderTab()}</main>`;
   if (state.tab === 'admin') bindAdmin(root);
   if (state.tab === 'account') bindAccount(root);
+  if (state.tab === 'shopping') bindShopping(root);
+  if (state.tab === 'notes') bindNotes(root);
 }
 
 function renderTab() {
@@ -159,6 +189,10 @@ function renderTab() {
       return renderAdmin(state);
     case 'account':
       return renderAccount(state);
+    case 'shopping':
+      return renderShopping(state);
+    case 'notes':
+      return renderNotes(state);
     default:
       return '';
   }
@@ -226,7 +260,9 @@ root.addEventListener('click', async (e) => {
       case 'tab':
         state.tab = btn.dataset.tab;
         if (state.tab === 'admin' || state.tab === 'account') await loadUsers();
-        render();
+        if (state.tab === 'shopping') await loadShopping();
+        else if (state.tab === 'notes') await loadNotes();
+        else render();
         break;
       case 'prev':
         state.weekStart = addDays(state.weekStart, -7);
