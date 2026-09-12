@@ -7,7 +7,7 @@ export const PW = 'secret1';
 
 /** Fresh in-memory app with three seeded users: admin, noa, orit. */
 export async function makeApp() {
-  const db = createDb('file::memory:');
+  const db = await createDb('memory://');
   await runMigrations(db);
   const app = createApp({ db, sessionSecret: 'test-secret', loginLimit: 1000 });
   const users = {};

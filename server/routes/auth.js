@@ -11,7 +11,7 @@ export default function authRoutes(db, loginRateLimit) {
       if (typeof username !== 'string' || typeof password !== 'string') {
         return res.status(400).json({ error: 'Username and password are required' });
       }
-      const row = await one(db, 'SELECT * FROM users WHERE username = ?', [username.trim()]);
+      const row = await one(db, 'SELECT * FROM users WHERE lower(username) = lower(?)', [username.trim()]);
       const ok = row && (await verifyPassword(password, row.password_hash));
       if (!ok) return res.status(401).json({ error: 'Wrong username or password' });
       req.session.userId = Number(row.id);

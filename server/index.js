@@ -13,7 +13,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /**
  * Build the Express app. Kept separate from `listen` so tests can mount it.
- * @param {{db: import('@libsql/client').Client, sessionSecret: string, production?: boolean, loginLimit?: number}} opts
+ * @param {{db: Awaited<ReturnType<typeof import('./db.js').createDb>>, sessionSecret: string, production?: boolean, loginLimit?: number}} opts
  */
 export function createApp({ db, sessionSecret, production = false, loginLimit = 10 }) {
   if (!sessionSecret) throw new Error('SESSION_SECRET is not set');
@@ -54,7 +54,7 @@ async function main() {
   const { default: dotenv } = await import('dotenv');
   dotenv.config();
   const production = process.env.NODE_ENV === 'production';
-  const db = createDb();
+  const db = await createDb();
   await runMigrations(db);
   await bootstrapAdmin(db);
   const app = createApp({ db, sessionSecret: process.env.SESSION_SECRET, production });

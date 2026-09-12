@@ -27,15 +27,16 @@ export default function carRoutes(db) {
       const v = await validateBooking(db, req.body ?? {}, req.user.id);
       if (v.error) return res.status(400).json({ error: v.error });
       const b = v.booking;
-      const { rowsAffected, lastInsertRowid } = await run(
+      const { rows } = await run(
         db,
         `INSERT INTO car_bookings (user_id, start_at, end_at, note)
-         SELECT ?, ?, ?, ?
-          WHERE NOT EXISTS (${OVERLAP_EXISTS})`,
+         SELECT ?::int, ?::text, ?::text, ?::text
+          WHERE NOT EXISTS (${OVERLAP_EXISTS})
+         RETURNING id`,
         [b.user_id, b.start_at, b.end_at, b.note, b.end_at, b.start_at, -1],
       );
-      if (!rowsAffected) return res.status(409).json({ error: 'overlap', conflict: await findConflict(db, b, null) });
-      res.status(201).json({ booking: await loadBooking(db, lastInsertRowid) });
+      if (!rows.length) return res.status(409).json({ error: 'overlap', conflict: await findConflict(db, b, null) });
+      res.status(201).json({ booking: await loadBooking(db, rows[0].id) });
     } catch (err) {
       next(err);
     }
@@ -107,7 +108,7 @@ async function validateBooking(db, body, defaultUserId) {
 }
 
 /** Subquery: another booking overlaps [start, end). Args: end_at, start_at, excludeId. */
-const OVERLAP_EXISTS = `SELECT 1 FROM car_bookings o WHERE o.start_at < ? AND o.end_at > ? AND o.id != ?`;
+const OVERLAP_EXISTS = `SELECT 1 FROM car_bookings o WHERE o.start_at < ?::text AND o.end_at > ?::text AND o.id != ?::int`;
 
 /** The earliest booking that overlaps `b` (excluding `excludeId`), shaped for a 409 response. */
 async function findConflict(db, b, excludeId) {

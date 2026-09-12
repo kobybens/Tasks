@@ -75,13 +75,13 @@ test('unknown /api route is JSON 404', async () => {
 });
 
 test('bootstrapAdmin creates the admin only on an empty database', async () => {
-  const db = createDb('file::memory:');
+  const db = await createDb('memory://');
   await runMigrations(db);
   const quiet = { warn() {}, info() {} };
   assert.equal(await bootstrapAdmin(db, {}, quiet), false);
   assert.equal(await bootstrapAdmin(db, { ADMIN_USERNAME: 'boss', ADMIN_PASSWORD: 'bosspw' }, quiet), true);
   assert.equal(await bootstrapAdmin(db, { ADMIN_USERNAME: 'other', ADMIN_PASSWORD: 'x' }, quiet), false);
-  const { rows } = await db.execute('SELECT username, is_admin FROM users');
+  const { rows } = await db.query('SELECT username, is_admin FROM users');
   assert.equal(rows.length, 1);
   assert.equal(rows[0].username, 'boss');
   assert.equal(Number(rows[0].is_admin), 1);
@@ -92,7 +92,7 @@ test('login is rate limited', async () => {
   // helper created app with loginLimit 1000; build a strict one here
   const { createApp } = await import('../server/index.js');
   const { createDb, runMigrations } = await import('../server/db.js');
-  const db = createDb('file::memory:');
+  const db = await createDb('memory://');
   await runMigrations(db);
   const strict = createApp({ db, sessionSecret: 's', loginLimit: 2 });
   void limited;

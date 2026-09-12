@@ -41,13 +41,13 @@ export default function taskRoutes(db) {
       const v = await validateTask(db, req.body ?? {});
       if (v.error) return res.status(400).json({ error: v.error });
       const t = v.task;
-      const { lastInsertRowid } = await run(
+      const { rows } = await run(
         db,
         `INSERT INTO tasks (title, notes, assignee_id, kind, date, weekday, start_date, end_date, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         [t.title, t.notes, t.assignee_id, t.kind, t.date, t.weekday, t.start_date, t.end_date, req.user.id],
       );
-      res.status(201).json({ task: await loadTask(db, lastInsertRowid) });
+      res.status(201).json({ task: await loadTask(db, rows[0].id) });
     } catch (err) {
       next(err);
     }
@@ -126,7 +126,7 @@ async function loadTask(db, id) {
   return row ? normalizeRow(row) : undefined;
 }
 
-/** libSQL returns integers as numbers or bigints depending on driver; coerce and drop nulls to null. */
+/** Coerce any bigint values to numbers so JSON serialisation never fails. */
 function normalizeRow(row) {
   const out = {};
   for (const [k, v] of Object.entries(row)) out[k] = typeof v === 'bigint' ? Number(v) : v;

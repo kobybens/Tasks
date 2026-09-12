@@ -36,12 +36,12 @@ export function isValidPassword(p) {
 
 export async function createUser(db, { username, display_name, password, is_admin = false, color }) {
   const password_hash = await hashPassword(password);
-  const { lastInsertRowid } = await run(
+  const { rows } = await run(
     db,
-    'INSERT INTO users (username, display_name, password_hash, is_admin, color) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO users (username, display_name, password_hash, is_admin, color) VALUES (?, ?, ?, ?, ?) RETURNING id',
     [username, display_name, password_hash, is_admin ? 1 : 0, color],
   );
-  return one(db, 'SELECT * FROM users WHERE id = ?', [lastInsertRowid]);
+  return one(db, 'SELECT * FROM users WHERE id = ?', [rows[0].id]);
 }
 
 /** Load the session user onto req.user, or answer 401. */

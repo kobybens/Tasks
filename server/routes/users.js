@@ -16,7 +16,7 @@ export default function userRoutes(db) {
   // Every logged-in user needs the list to pick an assignee or driver.
   r.get('/', async (_req, res, next) => {
     try {
-      const rows = await all(db, 'SELECT * FROM users ORDER BY display_name COLLATE NOCASE');
+      const rows = await all(db, 'SELECT * FROM users ORDER BY lower(display_name)');
       res.json({ users: rows.map(publicUser) });
     } catch (err) {
       next(err);
@@ -30,7 +30,7 @@ export default function userRoutes(db) {
       if (typeof display_name !== 'string' || !display_name.trim()) return res.status(400).json({ error: 'Display name is required' });
       if (!isValidPassword(password)) return res.status(400).json({ error: 'Password must be at least 4 characters' });
       if (!isValidColor(color)) return res.status(400).json({ error: 'Color must be a hex value like #3b82f6' });
-      if (await one(db, 'SELECT id FROM users WHERE username = ?', [username])) {
+      if (await one(db, 'SELECT id FROM users WHERE lower(username) = lower(?)', [username])) {
         return res.status(409).json({ error: 'Username already taken' });
       }
       const row = await createUser(db, {

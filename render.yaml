@@ -12,9 +12,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false        # libsql://<db>-<org>.turso.io
-      - key: DATABASE_AUTH_TOKEN
-        sync: false        # from: turso db tokens create family-tasks
+        sync: false        # Neon connection string: postgresql://user:pass@host/db?sslmode=require
       - key: SESSION_SECRET
         generateValue: true
       - key: ADMIN_USERNAME
