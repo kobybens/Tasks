@@ -48,7 +48,8 @@ npm test                  # API and unit tests (in-memory database)
    - `turso db show family-tasks --url` gives `DATABASE_URL`
    - `turso db tokens create family-tasks` gives `DATABASE_AUTH_TOKEN`
 3. **Render web service** at https://render.com
-   - New → Web Service → connect the GitHub repo.
+   - Quickest: New → Blueprint → pick the repo. `render.yaml` sets everything up and prompts
+     for the secret values. Or manually: New → Web Service → connect the GitHub repo.
    - Runtime: Node. Build command: `npm ci`. Start command: `npm start`. Instance type: Free.
    - Environment variables: `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `SESSION_SECRET`
      (generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`),
