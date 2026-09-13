@@ -1,5 +1,6 @@
 import { api, state, loadShopping, render, toast, withPending } from '../app.js';
-import { closeSheet, esc, openSheet } from '../lib.js';
+import { closeSheet, esc, fmtDay, openSheet, todayIso } from '../lib.js';
+import { formatShoppingList, whatsappUrl } from '../shopping-text.js';
 
 const LAST_GROUP_KEY = 'shopping.lastGroup';
 
@@ -12,7 +13,10 @@ export function renderShopping(state) {
     <div class="card">
       <div class="card-head">
         <h2>Super</h2>
-        <button class="btn ghost" data-shop="groups" ${groups.length ? '' : 'disabled'}>Groups</button>
+        <span class="card-actions">
+          <button class="btn ghost" data-shop="share" ${open.length ? '' : 'disabled'} title="Share the list to WhatsApp">Share</button>
+          <button class="btn ghost" data-shop="groups" ${groups.length ? '' : 'disabled'}>Groups</button>
+        </span>
       </div>
       <form class="shop-form" id="shop-form" autocomplete="off">
         <input name="text" maxlength="200" placeholder="Add something to buy…" aria-label="Item to buy" required />
@@ -100,6 +104,7 @@ export function bindShopping(root) {
   form?.elements.group_id.addEventListener('change', (e) => rememberGroup(Number(e.target.value)));
 
   root.querySelector('[data-shop="groups"]')?.addEventListener('click', openGroupsSheet);
+  root.querySelector('[data-shop="share"]')?.addEventListener('click', shareList);
 
   root.querySelector('#shop-list')?.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-shop]');
@@ -272,4 +277,33 @@ function openGroupsSheet() {
       err.textContent = ex.message;
     }
   });
+}
+
+/**
+ * Share the unticked items as text. Phones get the system share sheet (pick WhatsApp there);
+ * desktops open WhatsApp's click-to-chat link with the text prefilled.
+ */
+async function shareList() {
+  const text = formatShoppingList(state.shopping, state.shoppingGroups, { date: fmtDay(todayIso()) });
+  if (!text) {
+    toast('Nothing left to buy, nothing to share');
+    return;
+  }
+  if (navigator.share) {
+    try {
+      await navigator.share({ text });
+      return;
+    } catch (ex) {
+      if (ex?.name === 'AbortError') return; // user closed the share sheet
+    }
+  }
+  const win = window.open(whatsappUrl(text), '_blank', 'noopener');
+  if (!win) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('List copied. Paste it into WhatsApp.');
+    } catch {
+      toast('Could not open WhatsApp. Allow pop-ups and try again.', true);
+    }
+  }
 }

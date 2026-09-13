@@ -390,3 +390,4 @@ button { cursor: pointer; }
 }
 .group-row .hint { width: 36px; text-align: center; font-size: 12px; }
 #group-add { margin-bottom: var(--space-2); }
+.card-actions { display: flex; gap: 2px; }
