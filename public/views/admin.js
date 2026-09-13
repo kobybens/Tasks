@@ -18,6 +18,7 @@ export function renderAdmin(state) {
             ${u.is_admin ? '<span class="badge">admin</span>' : ''}
             <span class="grow"></span>
             <span class="ops">
+              <button class="btn" data-admin="rename" data-id="${u.id}">Rename</button>
               <button class="btn" data-admin="reset" data-id="${u.id}">Reset password</button>
               <button class="btn" data-admin="color" data-id="${u.id}">Next color</button>
               ${u.id !== state.user.id ? `<button class="btn" data-admin="toggle-admin" data-id="${u.id}">${u.is_admin ? 'Remove admin' : 'Make admin'}</button>` : ''}
@@ -85,6 +86,9 @@ export function bindAdmin(root) {
         case 'reset':
           openResetSheet(u);
           return;
+        case 'rename':
+          openRenameSheet(u);
+          return;
         case 'color': {
           const next = PALETTE[(PALETTE.indexOf(u.color) + 1) % PALETTE.length];
           await api(`/api/users/${id}`, { method: 'PATCH', body: { color: next } });
@@ -135,6 +139,41 @@ function openResetSheet(u) {
       );
       closeSheet();
       toast(`Password for ${u.display_name} was reset`);
+    } catch (ex) {
+      err.textContent = ex.message;
+    }
+  });
+}
+
+function openRenameSheet(u) {
+  const sheet = openSheet(`
+    <h2>Rename ${esc(u.display_name)}</h2>
+    <form class="form" id="rename-form" autocomplete="off">
+      <div class="field"><label for="rn-name">Name shown to the family</label><input id="rn-name" name="display_name" required maxlength="40" value="${esc(u.display_name)}" /></div>
+      <p class="hint">The username @${esc(u.username)} used to sign in does not change.</p>
+      <div class="error" id="rn-error"></div>
+      <div class="actions">
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="rn-cancel">Cancel</button>
+        <button type="submit" class="btn primary" id="rn-save">Save changes</button>
+      </div>
+    </form>`);
+  const form = sheet.querySelector('#rename-form');
+  const err = sheet.querySelector('#rn-error');
+  sheet.querySelector('#rn-cancel').addEventListener('click', closeSheet);
+  sheet.querySelector('#rn-name').select();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    try {
+      const { user } = await withPending(sheet.querySelector('#rn-save'), 'Saving…', () =>
+        api(`/api/users/${u.id}`, { method: 'PATCH', body: { display_name: new FormData(form).get('display_name') } }),
+      );
+      if (user.id === state.user.id) state.user = user;
+      closeSheet();
+      await loadUsers();
+      render();
+      toast(`Renamed to ${user.display_name}`);
     } catch (ex) {
       err.textContent = ex.message;
     }

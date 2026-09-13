@@ -131,3 +131,19 @@ test('security headers are present', async () => {
   assert.equal(res.headers['x-content-type-options'], 'nosniff');
   assert.equal(res.headers['x-powered-by'], undefined);
 });
+
+test('a user can change their own display name but not their username or admin flag', async () => {
+  const agent = await loginAs(app, 'noa');
+  assert.equal((await agent.patch('/api/auth/me').send({ display_name: '  ' })).status, 400);
+  assert.equal((await agent.patch('/api/auth/me').send({ display_name: 'x'.repeat(41) })).status, 400);
+  assert.equal((await agent.patch('/api/auth/me').send({})).status, 400);
+  const ok = await agent.patch('/api/auth/me').send({ display_name: ' Noa B. ', is_admin: true, username: 'boss' });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.user.display_name, 'Noa B.');
+  assert.equal(ok.body.user.username, 'noa');
+  assert.equal(ok.body.user.is_admin, false);
+  const me = await agent.get('/api/auth/me');
+  assert.equal(me.body.user.display_name, 'Noa B.');
+  assert.equal((await agent.patch('/api/auth/me').send({ color: 'blue' })).status, 400);
+  assert.equal((await agent.patch('/api/auth/me').send({ color: '#123456' })).body.user.color, '#123456');
+});

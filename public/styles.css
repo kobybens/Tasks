@@ -416,3 +416,8 @@ button { cursor: pointer; }
 .profile-actions { justify-content: flex-start; margin-top: var(--space-2); }
 .profile-actions .btn { display: inline-flex; align-items: center; cursor: pointer; }
 .profile-actions .btn.disabled { opacity: 0.55; pointer-events: none; }
+.name-form { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.name-form input {
+  flex: 1; min-width: 0; min-height: var(--tap); font-size: 18px; font-weight: 700;
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-sm); padding: 6px 12px;
+}

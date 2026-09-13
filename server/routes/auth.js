@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { one, run } from '../db.js';
-import { hashPassword, isValidPassword, publicUser, requireAuth, USER_SELECT, verifyPassword } from '../auth.js';
+import { hashPassword, isValidColor, isValidPassword, publicUser, requireAuth, USER_SELECT, verifyPassword } from '../auth.js';
 
 export default function authRoutes(db, loginRateLimit, failures) {
   const r = Router();
@@ -37,6 +37,30 @@ export default function authRoutes(db, loginRateLimit, failures) {
   });
 
   r.get('/me', requireAuth(db), (req, res) => res.json({ user: req.user }));
+
+  r.patch('/me', requireAuth(db), async (req, res, next) => {
+    try {
+      const { display_name, color } = req.body ?? {};
+      const sets = [];
+      const args = [];
+      if (display_name !== undefined) {
+        const name = typeof display_name === 'string' ? display_name.trim() : '';
+        if (!name || name.length > 40) return res.status(400).json({ error: 'Name is required (max 40 characters)' });
+        sets.push('display_name = ?');
+        args.push(name);
+      }
+      if (color !== undefined) {
+        if (!isValidColor(color)) return res.status(400).json({ error: 'Color must be a hex value like #3b82f6' });
+        sets.push('color = ?');
+        args.push(color);
+      }
+      if (!sets.length) return res.status(400).json({ error: 'Nothing to change' });
+      await run(db, `UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...args, req.user.id]);
+      res.json({ user: publicUser(await one(db, `${USER_SELECT} WHERE u.id = ?`, [req.user.id])) });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   r.patch('/password', requireAuth(db), async (req, res, next) => {
     try {

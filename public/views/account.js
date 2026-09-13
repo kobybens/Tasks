@@ -10,8 +10,12 @@ export function renderAccount(state) {
       <div class="profile">
         ${avatarHtml(u, 96, 'profile-avatar')}
         <div class="profile-text">
-          <h2>${esc(u.display_name)}</h2>
-          <p class="hint">@${esc(u.username)}${u.is_admin ? ' · admin' : ''}</p>
+          <form class="name-form" id="name-form" autocomplete="off">
+            <input name="display_name" maxlength="40" required value="${esc(u.display_name)}" aria-label="Your name" />
+            <button class="btn" type="submit" id="name-save">Save</button>
+          </form>
+          <p class="hint">@${esc(u.username)}${u.is_admin ? ' · admin' : ''} · This name is what the family sees on your tasks and notes.</p>
+          <div class="error" id="name-error"></div>
           <div class="actions profile-actions">
             <label class="btn" for="avatar-file" id="avatar-pick">${u.avatar_v ? 'Change photo' : 'Add photo'}</label>
             <input id="avatar-file" type="file" accept="image/*" hidden />
@@ -53,6 +57,26 @@ export function bindAccount(root) {
       toast('Password changed');
     } catch (ex) {
       err.textContent = ex.message;
+    }
+  });
+
+  const nameForm = root.querySelector('#name-form');
+  const nerr = root.querySelector('#name-error');
+  nameForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    nerr.textContent = '';
+    const display_name = nameForm.elements.display_name.value.trim();
+    if (!display_name || display_name === state.user.display_name) return;
+    try {
+      const { user } = await withPending(root.querySelector('#name-save'), 'Saving…', () =>
+        api('/api/auth/me', { method: 'PATCH', body: { display_name } }),
+      );
+      state.user = user;
+      await loadUsers();
+      render();
+      toast('Name updated');
+    } catch (ex) {
+      nerr.textContent = ex.message;
     }
   });
 
