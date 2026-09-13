@@ -3,6 +3,10 @@ import { one, run } from './db.js';
 
 const COLOR = /^#[0-9a-fA-F]{6}$/;
 
+/** Users plus the version (ms epoch) of their photo, or NULL. Append WHERE/ORDER BY using alias `u`. */
+export const USER_SELECT = `SELECT u.*, (SELECT (EXTRACT(EPOCH FROM a.updated_at) * 1000)::bigint FROM user_avatars a WHERE a.user_id = u.id) AS avatar_v
+                              FROM users u`;
+
 export function hashPassword(plain) {
   return bcrypt.hash(plain, 10);
 }
@@ -19,6 +23,7 @@ export function publicUser(row) {
     display_name: row.display_name,
     is_admin: Boolean(row.is_admin),
     color: row.color,
+    avatar_v: row.avatar_v == null ? null : Number(row.avatar_v),
   };
 }
 
@@ -41,7 +46,7 @@ export async function createUser(db, { username, display_name, password, is_admi
     'INSERT INTO users (username, display_name, password_hash, is_admin, color) VALUES (?, ?, ?, ?, ?) RETURNING id',
     [username, display_name, password_hash, is_admin ? 1 : 0, color],
   );
-  return one(db, 'SELECT * FROM users WHERE id = ?', [rows[0].id]);
+  return one(db, `${USER_SELECT} WHERE u.id = ?`, [rows[0].id]);
 }
 
 /** Load the session user onto req.user, or answer 401. */
@@ -50,7 +55,7 @@ export function requireAuth(db) {
     try {
       const id = req.session?.userId;
       if (!id) return res.status(401).json({ error: 'Not logged in' });
-      const row = await one(db, 'SELECT * FROM users WHERE id = ?', [id]);
+      const row = await one(db, `${USER_SELECT} WHERE u.id = ?`, [id]);
       if (!row) {
         req.session = null;
         return res.status(401).json({ error: 'Not logged in' });

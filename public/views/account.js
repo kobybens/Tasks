@@ -1,12 +1,26 @@
-import { api, toast, withPending } from '../app.js';
-import { esc, passwordField } from '../lib.js';
+import { api, state, loadUsers, render, toast, withPending } from '../app.js';
+import { avatarHtml, esc, passwordField } from '../lib.js';
+
+const AVATAR_SIZE = 192;
 
 export function renderAccount(state) {
+  const u = state.user;
   return `
     <div class="card">
-      <h2>Signed in as ${esc(state.user.display_name)}</h2>
-      <p class="hint">Username @${esc(state.user.username)}${state.user.is_admin ? ' · admin' : ''}</p>
-      <div class="actions" style="justify-content:flex-start"><button class="btn" data-action="logout">Sign out</button></div>
+      <div class="profile">
+        ${avatarHtml(u, 96, 'profile-avatar')}
+        <div class="profile-text">
+          <h2>${esc(u.display_name)}</h2>
+          <p class="hint">@${esc(u.username)}${u.is_admin ? ' · admin' : ''}</p>
+          <div class="actions profile-actions">
+            <label class="btn" for="avatar-file" id="avatar-pick">${u.avatar_v ? 'Change photo' : 'Add photo'}</label>
+            <input id="avatar-file" type="file" accept="image/*" hidden />
+            ${u.avatar_v ? '<button class="btn ghost" type="button" id="avatar-remove">Remove photo</button>' : ''}
+          </div>
+          <div class="error" id="avatar-error"></div>
+        </div>
+      </div>
+      <div class="actions" style="justify-content:flex-start;margin-top:12px"><button class="btn" data-action="logout">Sign out</button></div>
     </div>
     <div class="card">
       <h2>Change password</h2>
@@ -40,5 +54,73 @@ export function bindAccount(root) {
     } catch (ex) {
       err.textContent = ex.message;
     }
+  });
+
+  const file = root.querySelector('#avatar-file');
+  const pick = root.querySelector('#avatar-pick');
+  const aerr = root.querySelector('#avatar-error');
+  file?.addEventListener('change', async () => {
+    const chosen = file.files?.[0];
+    if (!chosen) return;
+    aerr.textContent = '';
+    const label = pick.textContent;
+    pick.textContent = 'Uploading…';
+    pick.classList.add('disabled');
+    try {
+      const data = await squareJpeg(chosen, AVATAR_SIZE);
+      const { user } = await api('/api/users/me/avatar', { method: 'PUT', body: { data } });
+      await afterAvatarChange(user, 'Photo updated');
+    } catch (ex) {
+      aerr.textContent = ex.message;
+      pick.textContent = label;
+      pick.classList.remove('disabled');
+      file.value = '';
+    }
+  });
+
+  root.querySelector('#avatar-remove')?.addEventListener('click', async (e) => {
+    try {
+      const { user } = await withPending(e.currentTarget, 'Removing…', () => api('/api/users/me/avatar', { method: 'DELETE' }));
+      await afterAvatarChange(user, 'Photo removed');
+    } catch (ex) {
+      aerr.textContent = ex.message;
+    }
+  });
+}
+
+async function afterAvatarChange(user, msg) {
+  state.user = user;
+  await loadUsers();
+  render();
+  toast(msg);
+}
+
+/**
+ * Read an image file, crop it to a centered square and scale it down, returning a JPEG data URL.
+ * Keeps uploads around 10-20 KB regardless of the original photo size.
+ */
+function squareJpeg(file, size) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) return reject(new Error('Please choose an image file'));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that file'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That file is not an image we can read'));
+      img.onload = () => {
+        const s = Math.min(img.naturalWidth, img.naturalHeight);
+        if (!s) return reject(new Error('That image is empty'));
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   });
 }

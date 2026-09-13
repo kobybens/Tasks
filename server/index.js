@@ -44,6 +44,8 @@ export function createApp({ db, sessionSecret, production = false, loginLimit = 
       strictTransportSecurity: production ? { maxAge: 180 * 24 * 60 * 60, includeSubDomains: false } : false,
     }),
   );
+  // Photos arrive as base64 JSON; allow a bigger body on that one route only.
+  app.use('/api/users/me/avatar', express.json({ limit: '400kb' }));
   app.use(express.json({ limit: '50kb' }));
   app.use(
     cookieSession({

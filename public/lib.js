@@ -137,3 +137,17 @@ export function bindPasswordEyes(container) {
     input.focus({ preventScroll: true });
   });
 }
+
+/**
+ * Round photo of a member, or a colored circle with their initial when they have none.
+ * `user` needs id, display_name, color and (optionally) avatar_v.
+ */
+export function avatarHtml(user, size = 24, cls = '') {
+  if (!user) return '';
+  const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.48)}px`;
+  if (user.avatar_v) {
+    return `<img class="avatar ${cls}" src="/api/users/${Number(user.id)}/avatar?v=${Number(user.avatar_v)}" alt="" style="${style}" loading="lazy" />`;
+  }
+  const initial = String(user.display_name || '?').trim().charAt(0).toUpperCase() || '?';
+  return `<span class="avatar avatar-fallback ${cls}" style="${style};background:${esc(user.color || '#64748b')}" aria-hidden="true">${esc(initial)}</span>`;
+}

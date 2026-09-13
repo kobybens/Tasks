@@ -13,7 +13,7 @@ test('any logged-in user can list users without password hashes', async () => {
   const res = await noa.get('/api/users');
   assert.equal(res.status, 200);
   assert.equal(res.body.users.length, 3);
-  assert.deepEqual(Object.keys(res.body.users[0]).sort(), ['color', 'display_name', 'id', 'is_admin', 'username']);
+  assert.deepEqual(Object.keys(res.body.users[0]).sort(), ['avatar_v', 'color', 'display_name', 'id', 'is_admin', 'username']);
 });
 
 test('non-admin cannot create, edit, or delete users', async () => {

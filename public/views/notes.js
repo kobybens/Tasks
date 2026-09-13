@@ -1,5 +1,5 @@
 import { api, state, loadNotes, render, toast, withPending } from '../app.js';
-import { closeSheet, esc, fmtDateTime, openSheet } from '../lib.js';
+import { avatarHtml, closeSheet, esc, fmtDateTime, openSheet } from '../lib.js';
 
 export function renderNotes(state) {
   return `
@@ -22,11 +22,12 @@ function renderNote(n) {
   const who = n.author ? esc(n.author.display_name) : 'someone who left';
   const color = n.author?.color ?? 'var(--border)';
   const when = fmtDateTime(n.created_at);
+  const author = n.author ? (state.users.find((u) => u.id === n.author.id) ?? n.author) : null;
   const edited = n.edited_by ? ` · edited by ${esc(n.edited_by)}` : n.updated_at > n.created_at ? ' · edited' : '';
   return `
     <article class="note" style="--who:${esc(color)}">
       <div class="note-meta">
-        <span>Added by <b class="note-author">${who}</b> · ${when}${edited}</span>
+        <span>${avatarHtml(author, 20)} Added by <b class="note-author">${who}</b> · ${when}${edited}</span>
         <span class="note-ops">
           <button class="btn ghost" data-note-edit="${n.id}">Edit</button>
           <button class="btn icon ghost note-del" data-note-del="${n.id}" aria-label="Delete note by ${who}" title="Delete">×</button>

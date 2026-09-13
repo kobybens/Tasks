@@ -404,3 +404,15 @@ button { cursor: pointer; }
   display: grid; place-items: center; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .pw-eye:hover, .pw-eye[aria-pressed="true"] { color: var(--text); }
+
+/* ---------- Avatars ---------- */
+.avatar { border-radius: 50%; object-fit: cover; flex: 0 0 auto; vertical-align: middle; background: var(--surface-2); }
+.avatar-fallback { display: inline-grid; place-items: center; color: #fff; font-weight: 700; text-shadow: 0 0 2px rgba(0, 0, 0, 0.6); line-height: 1; }
+.row .row-avatar { margin-left: auto; }
+.note-meta .avatar { vertical-align: -5px; margin-right: 2px; }
+.profile { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.profile-text { flex: 1; min-width: 200px; }
+.profile-text h2 { margin: 0 0 2px; }
+.profile-actions { justify-content: flex-start; margin-top: var(--space-2); }
+.profile-actions .btn { display: inline-flex; align-items: center; cursor: pointer; }
+.profile-actions .btn.disabled { opacity: 0.55; pointer-events: none; }

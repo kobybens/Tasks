@@ -5,7 +5,7 @@ import { renderAdmin, bindAdmin } from './views/admin.js';
 import { renderAccount, bindAccount } from './views/account.js';
 import { renderShopping, bindShopping } from './views/shopping.js';
 import { renderNotes, bindNotes } from './views/notes.js';
-import { addDays, todayIso, weekStartOf, fmtRange, esc, passwordField, bindPasswordEyes } from './lib.js';
+import { addDays, todayIso, weekStartOf, fmtRange, esc, passwordField, bindPasswordEyes, avatarHtml } from './lib.js';
 
 export const state = {
   user: null,
@@ -165,7 +165,7 @@ export function render() {
       <div class="topbar-inner">
         <div class="brand">The Ben-Shloosh Family</div>
         <div class="who">
-          <span class="dot" style="background:${esc(state.user.color)}"></span>
+          ${avatarHtml(state.user, 28)}
           <span class="name">${esc(state.user.display_name)}</span>
         </div>
       </div>

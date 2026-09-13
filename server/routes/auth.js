@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { one, run } from '../db.js';
-import { hashPassword, isValidPassword, publicUser, requireAuth, verifyPassword } from '../auth.js';
+import { hashPassword, isValidPassword, publicUser, requireAuth, USER_SELECT, verifyPassword } from '../auth.js';
 
 export default function authRoutes(db, loginRateLimit, failures) {
   const r = Router();
@@ -16,7 +16,7 @@ export default function authRoutes(db, loginRateLimit, failures) {
         console.warn(`Login locked for "${key}" from ${req.ip}`);
         return res.status(429).json({ error: `Too many failed attempts for this user. Try again in ${failures.minutes} minutes.` });
       }
-      const row = await one(db, 'SELECT * FROM users WHERE lower(username) = lower(?)', [username.trim()]);
+      const row = await one(db, `${USER_SELECT} WHERE lower(u.username) = lower(?)`, [username.trim()]);
       const ok = row && (await verifyPassword(password, row.password_hash));
       if (!ok) {
         failures.fail(key);

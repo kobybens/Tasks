@@ -1,5 +1,5 @@
 import { api, state, loadUsers, render, toast, withPending } from '../app.js';
-import { closeSheet, esc, openSheet, passwordField, PALETTE } from '../lib.js';
+import { avatarHtml, closeSheet, esc, openSheet, passwordField, PALETTE } from '../lib.js';
 
 export function renderAdmin(state) {
   const usedColors = new Set(state.users.map((u) => u.color));
@@ -12,6 +12,7 @@ export function renderAdmin(state) {
           .map(
             (u) => `
           <div class="user-row" data-id="${u.id}" style="--who:${esc(u.color)}">
+            ${avatarHtml(u, 32)}
             <span class="name">${esc(u.display_name)}</span>
             <span class="uname">@${esc(u.username)}</span>
             ${u.is_admin ? '<span class="badge">admin</span>' : ''}
