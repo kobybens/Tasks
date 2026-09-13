@@ -14,6 +14,7 @@ export const state = {
   occurrences: [],
   bookings: [],
   shopping: [],
+  shoppingGroups: [],
   notes: [],
   tab: 'week',
   loading: false,
@@ -81,7 +82,9 @@ export async function loadShopping() {
   state.loading = true;
   render();
   try {
-    state.shopping = (await api('/api/shopping')).items;
+    const data = await api('/api/shopping');
+    state.shopping = data.items;
+    state.shoppingGroups = data.groups;
   } finally {
     state.loading = false;
     render();
