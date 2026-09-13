@@ -161,7 +161,7 @@ export function render() {
   root.innerHTML = `
     <header class="topbar">
       <div class="topbar-inner">
-        <div class="brand">Family Tasks</div>
+        <div class="brand">The Ben-Shloosh Family</div>
         <div class="who">
           <span class="dot" style="background:${esc(state.user.color)}"></span>
           <span class="name">${esc(state.user.display_name)}</span>
@@ -217,7 +217,7 @@ function renderLogin() {
   return `
     <div class="login">
       <form id="login-form" autocomplete="on">
-        <h1>Family Tasks</h1>
+        <h1>The Ben-Shloosh Family</h1>
         <p class="sub">Sign in to see the week.</p>
         <div class="field"><label for="u">Username</label><input id="u" name="username" autocomplete="username" required autofocus /></div>
         <div class="field"><label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required /></div>

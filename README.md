@@ -1,4 +1,4 @@
-# Family Tasks
+# The Ben-Shloosh Family
 
 A small private web app for one family: a shared weekly calendar of household tasks
 (who does what on which day) and car reservations (who has the car and when).
