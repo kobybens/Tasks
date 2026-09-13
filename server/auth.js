@@ -31,7 +31,7 @@ export function isValidUsername(u) {
 }
 
 export function isValidPassword(p) {
-  return typeof p === 'string' && p.length >= 4 && p.length <= 200;
+  return typeof p === 'string' && p.length >= 8 && p.length <= 200;
 }
 
 export async function createUser(db, { username, display_name, password, is_admin = false, color }) {
@@ -97,5 +97,30 @@ export function makeRateLimiter({ max = 10, windowMs = 60_000 } = {}) {
     recent.push(now);
     hits.set(key, recent);
     next();
+  };
+}
+
+/**
+ * Tracks failed logins per username so guessing one account is capped even from many IPs.
+ * `max` failures within `windowMs` lock the username until the window passes.
+ */
+export function makeFailureTracker({ max = 5, windowMs = 15 * 60_000 } = {}) {
+  const failures = new Map();
+  const recent = (key, now) => (failures.get(key) || []).filter((t) => now - t < windowMs);
+  return {
+    isLocked(key) {
+      const list = recent(key, Date.now());
+      if (list.length) failures.set(key, list);
+      else failures.delete(key);
+      return list.length >= max;
+    },
+    fail(key) {
+      const now = Date.now();
+      failures.set(key, [...recent(key, now), now]);
+    },
+    clear(key) {
+      failures.delete(key);
+    },
+    minutes: Math.round(windowMs / 60_000),
   };
 }

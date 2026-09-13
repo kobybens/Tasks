@@ -12,8 +12,8 @@ export function renderAccount(state) {
       <h2>Change password</h2>
       <form class="form" id="pw-form" autocomplete="on">
         <div class="field"><label for="pw-cur">Current password</label><input id="pw-cur" name="current" type="password" required autocomplete="current-password" /></div>
-        <div class="field"><label for="pw-new">New password</label><input id="pw-new" name="next" type="password" required minlength="4" autocomplete="new-password" /></div>
-        <div class="field"><label for="pw-new2">Repeat new password</label><input id="pw-new2" name="next2" type="password" required minlength="4" autocomplete="new-password" /></div>
+        <div class="field"><label for="pw-new">New password</label><input id="pw-new" name="next" type="password" required minlength="8" autocomplete="new-password" /></div>
+        <div class="field"><label for="pw-new2">Repeat new password</label><input id="pw-new2" name="next2" type="password" required minlength="8" autocomplete="new-password" /></div>
         <div class="error" id="pw-error"></div>
         <div class="actions"><button class="btn primary" type="submit" id="pw-save">Change password</button></div>
       </form>

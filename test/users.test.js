@@ -23,11 +23,11 @@ test('non-admin cannot create, edit, or delete users', async () => {
 });
 
 test('admin creates a user who can then log in', async () => {
-  const res = await admin.post('/api/users').send({ username: 'maya', display_name: 'Maya', password: 'maya123', color: '#0000ff' });
+  const res = await admin.post('/api/users').send({ username: 'maya', display_name: 'Maya', password: 'maya1234', color: '#0000ff' });
   assert.equal(res.status, 201);
   assert.equal(res.body.user.username, 'maya');
   assert.equal(res.body.user.is_admin, false);
-  const maya = await loginAs(app, 'maya', 'maya123');
+  const maya = await loginAs(app, 'maya', 'maya1234');
   assert.equal((await maya.get('/api/auth/me')).body.user.display_name, 'Maya');
 });
 
@@ -36,15 +36,15 @@ test('creating a user validates input and rejects duplicates', async () => {
   assert.equal((await admin.post('/api/users').send({ username: 'ok', display_name: '', password: 'pass1', color: '#123456' })).status, 400);
   assert.equal((await admin.post('/api/users').send({ username: 'ok', display_name: 'Ok', password: 'ab', color: '#123456' })).status, 400);
   assert.equal((await admin.post('/api/users').send({ username: 'ok', display_name: 'Ok', password: 'pass1', color: 'red' })).status, 400);
-  assert.equal((await admin.post('/api/users').send({ username: 'NOA', display_name: 'Dup', password: 'pass1', color: '#123456' })).status, 409);
+  assert.equal((await admin.post('/api/users').send({ username: 'NOA', display_name: 'Dup', password: 'pass1234', color: '#123456' })).status, 409);
 });
 
 test('admin resets a password and edits display name and color', async () => {
-  const res = await admin.patch(`/api/users/${users.orit}`).send({ display_name: 'Orit B', color: '#abcdef', password: 'reset99' });
+  const res = await admin.patch(`/api/users/${users.orit}`).send({ display_name: 'Orit B', color: '#abcdef', password: 'reset9999' });
   assert.equal(res.status, 200);
   assert.equal(res.body.user.display_name, 'Orit B');
   assert.equal(res.body.user.color, '#abcdef');
-  const orit = await loginAs(app, 'orit', 'reset99');
+  const orit = await loginAs(app, 'orit', 'reset9999');
   assert.equal((await orit.get('/api/auth/me')).status, 200);
 });
 
@@ -61,7 +61,7 @@ test('admin cannot delete self or the last admin, or demote the last admin', asy
 });
 
 test('admin deletes a user and their tasks cascade', async () => {
-  const created = await admin.post('/api/users').send({ username: 'temp', display_name: 'Temp', password: 'temp123', color: '#222222' });
+  const created = await admin.post('/api/users').send({ username: 'temp', display_name: 'Temp', password: 'temp1234', color: '#222222' });
   const id = created.body.user.id;
   const task = await admin.post('/api/tasks').send({ title: 'Temp task', assignee_id: id, kind: 'once', date: '2026-09-15' });
   assert.equal(task.status, 201);

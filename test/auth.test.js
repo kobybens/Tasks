@@ -103,3 +103,31 @@ test('login is rate limited', async () => {
   assert.equal(r2.status, 401);
   assert.equal(r3.status, 429);
 });
+
+test('a username is locked after too many failed attempts, even with the right password', async () => {
+  const { createApp } = await import('../server/index.js');
+  const { createDb, runMigrations } = await import('../server/db.js');
+  const { createUser } = await import('../server/auth.js');
+  const db = await createDb('memory://');
+  await runMigrations(db);
+  await createUser(db, { username: 'dana', display_name: 'Dana', password: 'dana-pass-1', color: '#123456' });
+  await createUser(db, { username: 'eli', display_name: 'Eli', password: 'eli-pass-12', color: '#654321' });
+  const app2 = createApp({ db, sessionSecret: 's', loginLimit: 1000, userLoginLimit: 2 });
+  const attempt = (username, password) => request(app2).post('/api/auth/login').send({ username, password });
+
+  assert.equal((await attempt('dana', 'wrong')).status, 401);
+  assert.equal((await attempt('DANA', 'wrong')).status, 401);
+  const locked = await attempt('dana', 'dana-pass-1');
+  assert.equal(locked.status, 429);
+  assert.match(locked.body.error, /Too many failed attempts/);
+  // Other users are unaffected.
+  assert.equal((await attempt('eli', 'eli-pass-12')).status, 200);
+});
+
+test('security headers are present', async () => {
+  const res = await request(app).get('/');
+  assert.match(res.headers['content-security-policy'], /default-src 'self'/);
+  assert.match(res.headers['content-security-policy'], /frame-ancestors 'none'/);
+  assert.equal(res.headers['x-content-type-options'], 'nosniff');
+  assert.equal(res.headers['x-powered-by'], undefined);
+});

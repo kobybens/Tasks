@@ -28,7 +28,7 @@ export default function userRoutes(db) {
       const { username, display_name, password, color, is_admin } = req.body ?? {};
       if (!isValidUsername(username)) return res.status(400).json({ error: 'Username: 2-32 letters, digits, . _ -' });
       if (typeof display_name !== 'string' || !display_name.trim()) return res.status(400).json({ error: 'Display name is required' });
-      if (!isValidPassword(password)) return res.status(400).json({ error: 'Password must be at least 4 characters' });
+      if (!isValidPassword(password)) return res.status(400).json({ error: 'Password must be at least 8 characters' });
       if (!isValidColor(color)) return res.status(400).json({ error: 'Color must be a hex value like #3b82f6' });
       if (await one(db, 'SELECT id FROM users WHERE lower(username) = lower(?)', [username])) {
         return res.status(409).json({ error: 'Username already taken' });
@@ -72,7 +72,7 @@ export default function userRoutes(db) {
         args.push(is_admin ? 1 : 0);
       }
       if (password !== undefined) {
-        if (!isValidPassword(password)) return res.status(400).json({ error: 'Password must be at least 4 characters' });
+        if (!isValidPassword(password)) return res.status(400).json({ error: 'Password must be at least 8 characters' });
         sets.push('password_hash = ?');
         args.push(await hashPassword(password));
       }

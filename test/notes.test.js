@@ -54,8 +54,8 @@ test('anyone can edit a note; editor is recorded when different from the author'
 });
 
 test('a note survives its author being deleted', async () => {
-  const created = await admin.post('/api/users').send({ username: 'temp', display_name: 'Temp', password: 'temp123', color: '#222222' });
-  const temp = await loginAs(app, 'temp', 'temp123');
+  const created = await admin.post('/api/users').send({ username: 'temp', display_name: 'Temp', password: 'temp1234', color: '#222222' });
+  const temp = await loginAs(app, 'temp', 'temp1234');
   const note = await temp.post('/api/notes').send({ text: 'Left by temp' });
   assert.equal(note.status, 201);
   assert.equal((await admin.delete(`/api/users/${created.body.user.id}`)).status, 200);

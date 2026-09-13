@@ -34,7 +34,7 @@ export function renderAdmin(state) {
           <div class="field"><label for="au-name">Name</label><input id="au-name" name="display_name" required maxlength="40" placeholder="Noa" /></div>
           <div class="field"><label for="au-user">Username</label><input id="au-user" name="username" required pattern="[A-Za-z0-9_.\\-]{2,32}" placeholder="noa" autocomplete="off" /></div>
         </div>
-        <div class="field"><label for="au-pw">Starting password</label><input id="au-pw" name="password" type="text" required minlength="4" autocomplete="off" placeholder="At least 4 characters, they can change it later" /></div>
+        <div class="field"><label for="au-pw">Starting password</label><input id="au-pw" name="password" type="text" required minlength="8" autocomplete="off" placeholder="At least 8 characters, they can change it later" /></div>
         <div class="field"><label>Color</label>
           <div class="swatches">${PALETTE.map((c) => `<label style="background:${c}" title="${c}"><input type="radio" name="color" value="${c}" ${c === defaultColor ? 'checked' : ''} /></label>`).join('')}</div>
         </div>
@@ -113,7 +113,7 @@ function openResetSheet(u) {
   const sheet = openSheet(`
     <h2>Reset password for ${esc(u.display_name)}</h2>
     <form class="form" id="reset-form">
-      <div class="field"><label for="rp-pw">New password</label><input id="rp-pw" name="password" type="text" required minlength="4" autocomplete="off" placeholder="At least 4 characters" /></div>
+      <div class="field"><label for="rp-pw">New password</label><input id="rp-pw" name="password" type="text" required minlength="8" autocomplete="off" placeholder="At least 8 characters" /></div>
       <p class="hint">Tell ${esc(u.display_name)} the new password. They can change it from their Account tab.</p>
       <div class="error" id="rp-error"></div>
       <div class="actions">

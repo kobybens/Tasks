@@ -3,7 +3,7 @@ import { createDb, runMigrations } from '../server/db.js';
 import { createApp } from '../server/index.js';
 import { createUser } from '../server/auth.js';
 
-export const PW = 'secret1';
+export const PW = 'secret12';
 
 /** Fresh in-memory app with three seeded users: admin, noa, orit. */
 export async function makeApp() {
