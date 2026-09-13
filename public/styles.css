@@ -394,3 +394,13 @@ button { cursor: pointer; }
 @media (max-width: 480px) {
   .brand { font-size: 16px; }
 }
+
+/* ---------- Password eye ---------- */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 48px; }
+.pw-eye {
+  position: absolute; top: 0; right: 0; bottom: 0; width: var(--tap);
+  border: 0; background: transparent; color: var(--muted);
+  display: grid; place-items: center; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.pw-eye:hover, .pw-eye[aria-pressed="true"] { color: var(--text); }

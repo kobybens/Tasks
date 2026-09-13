@@ -5,7 +5,7 @@ import { renderAdmin, bindAdmin } from './views/admin.js';
 import { renderAccount, bindAccount } from './views/account.js';
 import { renderShopping, bindShopping } from './views/shopping.js';
 import { renderNotes, bindNotes } from './views/notes.js';
-import { addDays, todayIso, weekStartOf, fmtRange, esc } from './lib.js';
+import { addDays, todayIso, weekStartOf, fmtRange, esc, passwordField, bindPasswordEyes } from './lib.js';
 
 export const state = {
   user: null,
@@ -22,6 +22,8 @@ export const state = {
 };
 
 const root = document.getElementById('app');
+bindPasswordEyes(root);
+bindPasswordEyes(document.getElementById('sheet-root'));
 
 /* ---------------- API ---------------- */
 
@@ -220,7 +222,7 @@ function renderLogin() {
         <h1>The Ben-Shloosh Family</h1>
         <p class="sub">Sign in to see the week.</p>
         <div class="field"><label for="u">Username</label><input id="u" name="username" autocomplete="username" required autofocus /></div>
-        <div class="field"><label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required /></div>
+        <div class="field"><label for="p">Password</label>${passwordField({ id: 'p', name: 'password', autocomplete: 'current-password' })}</div>
         <div class="error" id="login-error"></div>
         <button class="btn primary" type="submit">Sign in</button>
       </form>
