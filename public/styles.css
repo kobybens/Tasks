@@ -423,7 +423,7 @@ button { cursor: pointer; }
 }
 
 /* ---------- Shopping quantity ---------- */
-.shop-qty {
+.shop-form .shop-qty {
   flex: 0 0 64px; min-height: var(--tap); text-align: center;
   border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 6px;
 }
