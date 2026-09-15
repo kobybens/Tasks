@@ -10,15 +10,15 @@ const groups = [
 
 test('groups unticked items under bold headers and skips empty groups and bought items', () => {
   const items = [
-    { text: 'Bread', done: false, group_id: 4 },
-    { text: 'Tomatoes', done: false, group_id: 1 },
+    { text: 'Bread', done: false, group_id: 4, qty: 1 },
+    { text: 'Tomatoes', done: false, group_id: 1, qty: 3 },
     { text: 'Milk 2L', done: true, group_id: 9 },
     { text: 'Cucumbers', done: false, group_id: 1 },
   ];
   const text = formatShoppingList(items, groups, { date: '13 Sep' });
   assert.equal(
     text,
-    ['🛒 *Super list* – 13 Sep', '', '*Vegetables & fruit*', '• Tomatoes', '• Cucumbers', '', '*Bread & bakery*', '• Bread'].join('\n'),
+    ['🛒 *Super list* – 13 Sep', '', '*Vegetables & fruit*', '• Tomatoes ×3', '• Cucumbers', '', '*Bread & bakery*', '• Bread'].join('\n'),
   );
 });
 

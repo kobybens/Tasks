@@ -20,6 +20,7 @@ export function renderShopping(state) {
       </div>
       <form class="shop-form" id="shop-form" autocomplete="off">
         <input name="text" maxlength="200" placeholder="Add something to buy…" aria-label="Item to buy" required />
+        <input name="qty" type="number" inputmode="numeric" min="1" max="999" value="1" class="shop-qty" aria-label="Quantity" title="Quantity" />
         <select name="group_id" aria-label="Group" id="shop-group">${groupOptions(groups, selected)}</select>
         <button class="btn primary" type="submit" id="shop-add">Add</button>
       </form>
@@ -50,7 +51,7 @@ function renderItem(i) {
   return `
     <div class="row shop-row${i.done ? ' done' : ''}" data-id="${i.id}">
       <button class="check" role="checkbox" aria-checked="${i.done}" data-shop="toggle" data-id="${i.id}" aria-label="Mark ${esc(i.text)} bought">${i.done ? '✓' : ''}</button>
-      <button class="edit" data-shop="edit" data-id="${i.id}" aria-label="Edit ${esc(i.text)}"><div class="t">${esc(i.text)}</div></button>
+      <button class="edit" data-shop="edit" data-id="${i.id}" aria-label="Edit ${esc(i.text)}"><div class="t">${esc(i.text)}${i.qty > 1 ? ` <span class="qty">×${i.qty}</span>` : ""}</div></button>
       <button class="btn icon ghost shop-del" data-shop="delete" data-id="${i.id}" aria-label="Remove ${esc(i.text)}" title="Remove">×</button>
     </div>`;
 }
@@ -88,10 +89,11 @@ export function bindShopping(root) {
     err.textContent = '';
     const text = form.elements.text.value.trim();
     const groupId = Number(form.elements.group_id.value);
+    const qty = Number(form.elements.qty.value) || 1;
     if (!text) return;
     try {
       const { item } = await withPending(root.querySelector('#shop-add'), '…', () =>
-        api('/api/shopping', { method: 'POST', body: { text, group_id: groupId } }),
+        api('/api/shopping', { method: 'POST', body: { text, qty, group_id: groupId } }),
       );
       rememberGroup(groupId);
       state.shopping.push(item);
@@ -156,7 +158,10 @@ function openEditSheet(item) {
   const sheet = openSheet(`
     <h2>Edit item</h2>
     <form class="form" id="shop-edit-form">
-      <div class="field"><label for="se-text">Item</label><input id="se-text" name="text" required maxlength="200" value="${esc(item.text)}" /></div>
+      <div class="two">
+        <div class="field"><label for="se-text">Item</label><input id="se-text" name="text" required maxlength="200" value="${esc(item.text)}" /></div>
+        <div class="field"><label for="se-qty">Quantity</label><input id="se-qty" name="qty" type="number" inputmode="numeric" min="1" max="999" required value="${item.qty}" /></div>
+      </div>
       <div class="field"><label for="se-group">Group</label><select id="se-group" name="group_id">${groupOptions(state.shoppingGroups, item.group_id)}</select></div>
       <div class="error" id="se-error"></div>
       <div class="actions">
@@ -186,7 +191,7 @@ function openEditSheet(item) {
     const f = new FormData(form);
     try {
       const { item: updated } = await withPending(sheet.querySelector('#se-save'), 'Saving…', () =>
-        api(`/api/shopping/${item.id}`, { method: 'PATCH', body: { text: f.get('text'), group_id: Number(f.get('group_id')) } }),
+        api(`/api/shopping/${item.id}`, { method: 'PATCH', body: { text: f.get('text'), qty: Number(f.get('qty')), group_id: Number(f.get('group_id')) } }),
       );
       Object.assign(item, updated);
       closeSheet();

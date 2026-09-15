@@ -86,3 +86,22 @@ test('delete one item', async () => {
   assert.equal((await orit.delete(`/api/shopping/${item.id}`)).status, 404);
   assert.equal((await noa.get('/api/shopping')).body.items.length, 0);
 });
+
+test('quantity defaults to 1, can be set and changed, and is validated', async () => {
+  const one = await noa.post('/api/shopping').send({ text: 'Butter' });
+  assert.equal(one.body.item.qty, 1);
+  const three = await noa.post('/api/shopping').send({ text: 'Milk', qty: 3 });
+  assert.equal(three.status, 201);
+  assert.equal(three.body.item.qty, 3);
+  assert.equal((await noa.post('/api/shopping').send({ text: 'Bad', qty: 0 })).status, 400);
+  assert.equal((await noa.post('/api/shopping').send({ text: 'Bad', qty: 2.5 })).status, 400);
+  assert.equal((await noa.post('/api/shopping').send({ text: 'Bad', qty: 1000 })).status, 400);
+  assert.equal((await noa.post('/api/shopping').send({ text: 'Bad', qty: 'lots' })).status, 400);
+
+  const bumped = await orit.patch(`/api/shopping/${three.body.item.id}`).send({ qty: 4 });
+  assert.equal(bumped.body.item.qty, 4);
+  assert.equal(bumped.body.item.text, 'Milk');
+  const ticked = await orit.patch(`/api/shopping/${three.body.item.id}`).send({ done: true });
+  assert.equal(ticked.body.item.qty, 4, 'ticking keeps the quantity');
+  assert.equal((await orit.patch(`/api/shopping/${three.body.item.id}`).send({ qty: -1 })).status, 400);
+});

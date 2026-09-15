@@ -15,16 +15,20 @@ export function formatShoppingList(items, groups, { title = 'Super list', date =
     const mine = open.filter((i) => i.group_id === g.id);
     if (!mine.length) continue;
     if (groups.length > 1) lines.push('', `*${g.name}*`);
-    for (const i of mine) lines.push(`• ${i.text}`);
+    for (const i of mine) lines.push(itemLine(i));
   }
   // Items whose group is unknown (should not happen, but never lose an item).
   const known = new Set(groups.map((g) => g.id));
   const orphans = open.filter((i) => !known.has(i.group_id));
   if (orphans.length) {
     lines.push('');
-    for (const i of orphans) lines.push(`• ${i.text}`);
+    for (const i of orphans) lines.push(itemLine(i));
   }
   return lines.join('\n');
+}
+
+function itemLine(i) {
+  return `• ${i.text}${i.qty > 1 ? ` ×${i.qty}` : ''}`;
 }
 
 /** WhatsApp click-to-chat URL that opens a new message with the text prefilled. */

@@ -3,9 +3,10 @@ import { all, one, run } from '../db.js';
 
 const MAX_TEXT = 200;
 const MAX_GROUP = 40;
+const MAX_QTY = 999;
 
 // Items whose group was removed fall back to the default ("Other") group.
-const ITEM_SELECT = `SELECT i.id, i.text, i.done, i.created_by, i.created_at,
+const ITEM_SELECT = `SELECT i.id, i.text, i.qty, i.done, i.created_by, i.created_at,
                             COALESCE(i.group_id, (SELECT id FROM shopping_groups WHERE is_default = 1)) AS group_id
                        FROM shopping_items i`;
 const GROUP_SELECT = 'SELECT * FROM shopping_groups ORDER BY is_default ASC, position ASC, id ASC';
@@ -96,8 +97,11 @@ export default function shoppingRoutes(db) {
       if (!text) return res.status(400).json({ error: `Item text is required (max ${MAX_TEXT} characters)` });
       const groupId = await resolveGroup(db, req.body?.group_id);
       if (groupId === undefined) return res.status(400).json({ error: 'Group does not exist' });
-      const { rows } = await run(db, 'INSERT INTO shopping_items (text, group_id, created_by) VALUES (?, ?, ?) RETURNING id', [
+      const qty = parseQty(req.body?.qty, 1);
+      if (qty === undefined) return res.status(400).json({ error: `Quantity must be a whole number from 1 to ${MAX_QTY}` });
+      const { rows } = await run(db, 'INSERT INTO shopping_items (text, qty, group_id, created_by) VALUES (?, ?, ?, ?) RETURNING id', [
         text,
+        qty,
         groupId,
         req.user.id,
       ]);
@@ -122,7 +126,9 @@ export default function shoppingRoutes(db) {
       const id = Number(req.params.id);
       const existing = await one(db, 'SELECT * FROM shopping_items WHERE id = ?', [id]);
       if (!existing) return res.status(404).json({ error: 'Item not found' });
-      const { text, done, group_id } = req.body ?? {};
+      const { text, done, group_id, qty } = req.body ?? {};
+      const nextQty = parseQty(qty, Number(existing.qty));
+      if (nextQty === undefined) return res.status(400).json({ error: `Quantity must be a whole number from 1 to ${MAX_QTY}` });
       let nextText = existing.text;
       if (text !== undefined) {
         nextText = cleanText(text, MAX_TEXT);
@@ -134,7 +140,7 @@ export default function shoppingRoutes(db) {
         if (nextGroup === undefined) return res.status(400).json({ error: 'Group does not exist' });
       }
       const nextDone = done === undefined ? Number(existing.done) : done ? 1 : 0;
-      await run(db, 'UPDATE shopping_items SET text = ?, done = ?, group_id = ? WHERE id = ?', [nextText, nextDone, nextGroup, id]);
+      await run(db, 'UPDATE shopping_items SET text = ?, qty = ?, done = ?, group_id = ? WHERE id = ?', [nextText, nextQty, nextDone, nextGroup, id]);
       res.json({ item: await loadItem(db, id) });
     } catch (err) {
       next(err);
@@ -181,6 +187,7 @@ function shapeItem(row) {
   return {
     id: Number(row.id),
     text: row.text,
+    qty: Number(row.qty ?? 1),
     done: Boolean(Number(row.done)),
     group_id: Number(row.group_id),
     created_by: row.created_by == null ? null : Number(row.created_by),
@@ -190,4 +197,12 @@ function shapeItem(row) {
 
 function shapeGroup(row) {
   return { id: Number(row.id), name: row.name, is_default: Boolean(Number(row.is_default)) };
+}
+
+/** Whole number 1..MAX_QTY; `fallback` when omitted; undefined when invalid. */
+function parseQty(raw, fallback) {
+  if (raw === undefined || raw === null || raw === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > MAX_QTY) return undefined;
+  return n;
 }
